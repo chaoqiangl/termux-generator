@@ -1,0 +1,3 @@
+# Placeholder to ensure plugins/vendor-attr/distfiles directory is tracked by git
+# Upload attr-2.6.0.tar.gz into this directory (plugins/vendor-attr/distfiles/) to provide the local distfile.
+# This file is intentionally empty (only serves to keep the directory in the repo).
