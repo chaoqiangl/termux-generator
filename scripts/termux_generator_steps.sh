@@ -1,4 +1,5 @@
-# Funktion, um den Paketnamen zu überprüfen
+#!/bin/bash
+# Function to check package name
 check_names() {
     if [[ $TERMUX_APP__PACKAGE_NAME =~ '_' ]] || \
        [[ $TERMUX_APP__PACKAGE_NAME =~ '-' ]] || \
@@ -57,7 +58,7 @@ clean_artifacts() {
     rm -rf termux* *.apk *.deb *.xz *.zip 2>/dev/null
 }
 
-# Funktion, um Repositories herunterzuladen
+# Function to download repositories and optionally install local distfiles
 download() {
     if [[ "$TERMUX_APP_TYPE" == "f-droid" ]]; then
         git clone --depth 1 https://github.com/termux/termux-packages.git               termux-packages-main
@@ -80,6 +81,19 @@ download() {
         git clone --depth 1 https://github.com/termux-play-store/termux-apps.git        termux-apps-main
     fi
     git clone --depth 1 --recursive https://github.com/termux/termux-x11.git        termux-apps-main/termux-x11
+
+    # If you have pre-downloaded distfiles (tarballs) and committed them into this repository under
+    # the 'distfiles/' directory, copy them into the termux-packages 'distfiles' folder so the package
+    # build system will use the local files instead of attempting network downloads.
+    #
+    # To use: upload your attr-2.6.0.tar.gz (or other tarballs) into <repo-root>/distfiles/ and commit.
+    # The workflow will then copy all files from that folder into termux-packages-main/distfiles.
+    if [ -d "$TERMUX_GENERATOR_HOME/distfiles" ]; then
+        echo "[*] Local distfiles directory found. Copying pre-downloaded tarballs into termux-packages-main/distfiles"
+        mkdir -p termux-packages-main/distfiles
+        # Copying with -n to avoid overwriting existing files in termux-packages-main/distfiles
+        cp -nv "$TERMUX_GENERATOR_HOME/distfiles/"* termux-packages-main/distfiles/ || true
+    fi
 }
 
 install_plugin() {
@@ -87,7 +101,7 @@ install_plugin() {
     apply_patches "plugins/$TERMUX_GENERATOR_PLUGIN/$TERMUX_APP_TYPE-patches/app-patches" termux-apps-main
 }
 
-# Funktion, um Bootstrap-Patches anzuwenden
+# Function to apply bootstrap patches
 patch_bootstraps() {
     # The reason why it is necessary to replace the name first, then patch bootstraps, but do the reverse for apps,
     # is because command-not-found must be partially unpatched back to the default TERMUX_PREFIX to build,
@@ -127,7 +141,7 @@ EOF
     rm -rf termux-packages-main/packages/zeronet # https://github.com/termux/termux-packages/pull/25367
 }
 
-# Funktion, um die App zu patchen
+# Function to apply app patches
 patch_apps() {
     apply_patches "$TERMUX_APP_TYPE-patches/app-patches" termux-apps-main
 
@@ -164,14 +178,14 @@ move_termux_x11_deb() {
     popd
 }
 
-# Funktion, um Bootstraps zu erstellen
+# Function to build bootstraps
 build_bootstraps() {
     pushd termux-packages-main
 
     local bootstrap_script_args=""
 
     if [ -n "$ENABLE_SSH_SERVER" ]; then
-        ADDITIONAL_PACKAGES+=",openssh"
+        ADDITIONAL_PACKAGES=",openssh"
     fi
 
     bootstrap_script_args+=" --add ${ADDITIONAL_PACKAGES}"
@@ -204,7 +218,7 @@ build_bootstraps() {
     # needed for building pypy and similar packages
     scripts/run-docker.sh sudo ln -sf "/data/data/$TERMUX_APP__PACKAGE_NAME/aosp" /system
 
-    if [[ "$TERMUX_APP_TYPE" == "f-droid" && "$TERMUX_APP__PACKAGE_NAME" == "com.retired64.termux" && $bootstrap_architectures != *","* ]]; then
+    if [[ "$TERMUX_APP_TYPE" == "f-droid" && "$TERMUX_APP__PACKAGE_NAME" == "com.retired64.termux" && $bootstrap_architectures != *,* ]]; then
         build_all_packages "$bootstrap_architectures"
     fi
 
@@ -219,7 +233,7 @@ build_bootstraps() {
     popd
 }
 
-# Funktion, um Bootstraps zu kopieren
+# Function to move bootstraps
 move_bootstraps() {
     if [[ "$TERMUX_APP_TYPE" == "f-droid" ]]; then
         local app_assets_dir="app/src/main/assets/"
@@ -239,7 +253,7 @@ move_bootstraps() {
     fi
 }
 
-# Funktion, um die App zu bauen
+# Function to build apps
 build_apps() {
     pushd termux-apps-main
 
@@ -292,7 +306,7 @@ build_apps() {
     popd
 }
 
-# Funktion, um die APK zu kopieren
+# Function to move APKs
 move_apks() {
     if [[ "$TERMUX_APP_TYPE" == "f-droid" ]]; then
         local build_dir="app/build/outputs/apk/debug"
