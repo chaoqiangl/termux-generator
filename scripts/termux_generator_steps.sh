@@ -57,6 +57,20 @@ clean_artifacts() {
     rm -rf termux* *.apk *.deb *.xz *.zip 2>/dev/null
 }
 
+# Replace the broken GitLab archive URL used by libdav1d with the official VideoLAN tarball.
+# The GitLab URL currently resolves to a tiny HTML/error payload, which causes the expected SHA256 check to fail.
+patch_libdav1d_source() {
+    local pkgfile="termux-packages-main/packages/libdav1d/build.sh"
+
+    if [[ -f "$pkgfile" ]]; then
+        echo "[*] Patching libdav1d to use the official VideoLAN source tarball."
+        portable_sed_i \
+            -e 's|TERMUX_PKG_SRCURL=.*|TERMUX_PKG_SRCURL=https://download.videolan.org/pub/videolan/dav1d/${TERMUX_PKG_VERSION}/dav1d-${TERMUX_PKG_VERSION}.tar.xz|' \
+            -e 's|TERMUX_PKG_SHA256=.*|TERMUX_PKG_SHA256=374c2e282fcb1ba4b8e0e346a6354d40577a244f898985cd0e1dd5aa8fb96c6d|' \
+            "$pkgfile"
+    fi
+}
+
 # Funktion, um Repositories herunterzuladen
 download() {
     if [[ "$TERMUX_APP_TYPE" == "f-droid" ]]; then
@@ -80,6 +94,7 @@ download() {
         git clone --depth 1 https://github.com/termux-play-store/termux-apps.git        termux-apps-main
     fi
     git clone --depth 1 --recursive https://github.com/termux/termux-x11.git        termux-apps-main/termux-x11
+    patch_libdav1d_source
 }
 
 install_plugin() {
