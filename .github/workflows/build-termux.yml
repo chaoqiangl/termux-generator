@@ -138,20 +138,20 @@ jobs:
       - name: Check dav1d archive URL
         run: |
           set -eux
-          url="https://code.videolan.org/videolan/dav1d/-/archive/1.5.4/dav1d-1.5.4.tar.bz2"
+          url="https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz"
 
           echo "=== HTTP headers ==="
-          curl -L -D /tmp/dav1d-headers.txt -o /tmp/dav1d-1.5.4.tar.bz2 "$url"
+          curl -L -D /tmp/dav1d-headers.txt -o /tmp/dav1d-1.5.4.tar.xz "$url"
           cat /tmp/dav1d-headers.txt
 
           echo "=== file info ==="
-          file /tmp/dav1d-1.5.4.tar.bz2
+          file /tmp/dav1d-1.5.4.tar.xz
 
           echo "=== sha256 ==="
-          sha256sum /tmp/dav1d-1.5.4.tar.bz2
+          sha256sum /tmp/dav1d-1.5.4.tar.xz
 
           echo "=== first 32 bytes ==="
-          xxd -l 32 /tmp/dav1d-1.5.4.tar.bz2 || true
+          xxd -l 32 /tmp/dav1d-1.5.4.tar.xz || true
       - name: Build Termux
         run: |
           ./build-termux.sh \
@@ -176,10 +176,10 @@ jobs:
         if: ${{ failure() }}
         run: |
           set +e
-          url="https://code.videolan.org/videolan/dav1d/-/archive/1.5.4/dav1d-1.5.4.tar.bz2"
+          url="https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz"
 
           echo "=== curl final check ==="
-          curl -L -D /tmp/dav1d-final-headers.txt -o /tmp/dav1d-final.tar.bz2 "$url" 2>/tmp/dav1d-final.err || true
+          curl -L -D /tmp/dav1d-final-headers.txt -o /tmp/dav1d-final.tar.xz "$url" 2>/tmp/dav1d-final.err || true
           if [ -f /tmp/dav1d-final.err ]; then
             cat /tmp/dav1d-final.err
           fi
@@ -188,9 +188,9 @@ jobs:
           fi
 
           echo "=== downloaded file info ==="
-          file /tmp/dav1d-final.tar.bz2 || true
-          ls -lh /tmp/dav1d-final.tar.bz2 || true
-          sha256sum /tmp/dav1d-final.tar.bz2 || true
+          file /tmp/dav1d-final.tar.xz || true
+          ls -lh /tmp/dav1d-final.tar.xz || true
+          sha256sum /tmp/dav1d-final.tar.xz || true
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.6.0
         with:
