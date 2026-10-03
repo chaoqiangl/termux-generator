@@ -57,17 +57,28 @@ clean_artifacts() {
     rm -rf termux* *.apk *.deb *.xz *.zip 2>/dev/null
 }
 
-# Replace the broken GitLab archive URL used by libdav1d with the official VideoLAN tarball.
-# The GitLab URL currently resolves to a tiny HTML/error payload, which causes the expected SHA256 check to fail.
-patch_libdav1d_source() {
-    local pkgfile="termux-packages-main/packages/libdav1d/build.sh"
-
-    if [[ -f "$pkgfile" ]]; then
-        echo "[*] Patching libdav1d to use the official VideoLAN source tarball."
-        portable_sed_i \
-            -e 's|TERMUX_PKG_SRCURL=.*|TERMUX_PKG_SRCURL=https://download.videolan.org/pub/videolan/dav1d/${TERMUX_PKG_VERSION}/dav1d-${TERMUX_PKG_VERSION}.tar.xz|' \
-            -e 's|TERMUX_PKG_SHA256=.*|TERMUX_PKG_SHA256=374c2e282fcb1ba4b8e0e346a6354d40577a244f898985cd0e1dd5aa8fb96c6d|' \
-            "$pkgfile"
+# Keep only the verified fixes that are still required.
+# We intentionally do not override libdav1d because the official upstream source
+# archive and checksum are the canonical values. The previous override caused the
+# wrong SHA256 mismatch during CI.
+patch_known_bad_sources() {
+    local texinfo="termux-packages-main/packages/texinfo/build.sh"
+    if [[ -f "$texinfo" ]]; then
+        echo "[*] Patching texinfo to use the canonical GNU mirror and remove the stale Debian checksum source."
+        python3 - "$texinfo" <<'PY'
+import re, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+text = path.read_text()
+text = text.replace('https://salsa.debian.org/tex-team/texinfo/-/archive/debian/7.3-1/texinfo-debian-7.3-1.tar.gz', '')
+text = re.sub(r'(?ms)^TERMUX_PKG_SRCURL=\(\n(?:.*\n)*?\)\n',
+              'TERMUX_PKG_SRCURL=(\n\thttps://mirrors.kernel.org/gnu/texinfo/texinfo-${TERMUX_PKG_VERSION}.tar.xz\n)\n',
+              text, count=1)
+text = re.sub(r'(?ms)^TERMUX_PKG_SHA256=\(\n(?:.*\n)*?\)\n',
+              'TERMUX_PKG_SHA256=(\n\t51f74eb0f51cfa9873be85264dfdd5d46e8957ec95b88f0fb762f63d9e164c72\n)\n',
+              text, count=1)
+path.write_text(text)
+PY
     fi
 }
 
@@ -94,7 +105,7 @@ download() {
         git clone --depth 1 https://github.com/termux-play-store/termux-apps.git        termux-apps-main
     fi
     git clone --depth 1 --recursive https://github.com/termux/termux-x11.git        termux-apps-main/termux-x11
-    patch_libdav1d_source
+    patch_known_bad_sources
 }
 
 install_plugin() {
