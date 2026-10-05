@@ -85,6 +85,19 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
+
+      - name: Restore Gradle and reusable Termux build caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle
+            ~/.ccache
+            termux-packages-main/_cache
+            termux-packages-main/output
+          key: ${{ runner.os }}-termux-${{ github.event.inputs.type || 'f-droid' }}-${{ github.event.inputs.architectures || 'aarch64' }}-${{ github.event.inputs.name || 'default' }}-${{ hashFiles('**/*.gradle*', 'termux-packages-main/packages/**/build.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-termux-${{ github.event.inputs.type || 'f-droid' }}-${{ github.event.inputs.architectures || 'aarch64' }}-
+
       - name: Set --add
         if: "${{ github.event.inputs.add != '' }}"
         run: echo "ADDITIONAL_PACKAGES=--add ${{ github.event.inputs.add }}" >> $GITHUB_ENV
