@@ -81,6 +81,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 4320
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
@@ -135,23 +136,6 @@ jobs:
       - name: Set --plugin
         if: "${{ github.event.inputs.plugin != '' }}"
         run: echo "PLUGIN=--plugin ${{ github.event.inputs.plugin }}" >> $GITHUB_ENV
-      - name: Check dav1d archive URL
-        run: |
-          set -eux
-          url="https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz"
-
-          echo "=== HTTP headers ==="
-          curl -L -D /tmp/dav1d-headers.txt -o /tmp/dav1d-1.5.4.tar.xz "$url"
-          cat /tmp/dav1d-headers.txt
-
-          echo "=== file info ==="
-          file /tmp/dav1d-1.5.4.tar.xz
-
-          echo "=== sha256 ==="
-          sha256sum /tmp/dav1d-1.5.4.tar.xz
-
-          echo "=== first 32 bytes ==="
-          xxd -l 32 /tmp/dav1d-1.5.4.tar.xz || true
       - name: Build Termux
         run: |
           ./build-termux.sh \
@@ -172,25 +156,6 @@ jobs:
                 $DISABLE_GUI \
                 $DISABLE_X11 \
                 $PLUGIN
-      - name: Diagnose dav1d download on failure
-        if: ${{ failure() }}
-        run: |
-          set +e
-          url="https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz"
-
-          echo "=== curl final check ==="
-          curl -L -D /tmp/dav1d-final-headers.txt -o /tmp/dav1d-final.tar.xz "$url" 2>/tmp/dav1d-final.err || true
-          if [ -f /tmp/dav1d-final.err ]; then
-            cat /tmp/dav1d-final.err
-          fi
-          if [ -f /tmp/dav1d-final-headers.txt ]; then
-            cat /tmp/dav1d-final-headers.txt
-          fi
-
-          echo "=== downloaded file info ==="
-          file /tmp/dav1d-final.tar.xz || true
-          ls -lh /tmp/dav1d-final.tar.xz || true
-          sha256sum /tmp/dav1d-final.tar.xz || true
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.6.0
         with:
